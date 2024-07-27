@@ -9,8 +9,23 @@ namespace BookStore.Models
         [Required]
         public string Title { get; set; }
 
+        [Required]
         public string Author { get; set; }
 
-        public double Price { get; set; }
+        [Required]
+        [DataType(DataType.Currency)]
+        public decimal Price { get; set; }
+
+        public string? Description { get; set; }
+
+        [Required]
+        public int Stock { get; set; }
+        
+        // Yeni alan
+        [StringLength(50)]
+        public string? Type { get; set; }  // Kitap türü
+        public int? SellerId { get; set; } // Yeni eklenen kolon
+
+        public Seller Seller { get; set; } // Seller ile ilişki
     }
 }
