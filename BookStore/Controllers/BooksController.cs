@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
 public class BooksController : Controller
@@ -46,43 +47,47 @@ public BooksController(ApplicationDbContext context)
     // GET: Books/Create
     public IActionResult Create()
     {
+        // Seller'ları al ve ViewBag'e ata
         var sellers = _context.Sellers.ToList();
-        if (sellers != null && sellers.Any())
+        if (sellers == null || !sellers.Any())
         {
-            // Sellers tablosunda veri yoksa kullanıcıya bilgi verin
+            // Sellers tablosunda veri yoksa kullanıcıya bilgi ver
             ModelState.AddModelError(string.Empty, "No sellers available.");
             return View();
         }
 
-        ViewBag.SellerId = new SelectList(sellers, "Id", "Name");
+        ViewBag.SellerId = new SelectList(sellers, "SellerId", "SellerName");
         return View();
     }
 
     // POST: Books/Create
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create([Bind("Id,Title,Author,Price,Description,Stock,SellerId")] Book book)
+    public async Task<IActionResult> Create([Bind("BookId,Title,Author,Price,Description,Type,Stock,SellerId")] Book book)
     {
         if (ModelState.IsValid)
         {
-            _context.Books.Add(book);
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
+            try
+            {
+                _context.Add(book);
+                await _context.SaveChangesAsync();
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError(string.Empty, $"Error: {ex.Message}");
+            }
         }
 
-        // Sellers listesi yeniden alınmalı ve ViewBag ayarlanmalı
+        // Formdaki diğer alanları yeniden doldur
         var sellers = _context.Sellers.ToList();
-        if (sellers == null || !sellers.Any())
-        {
-            ModelState.AddModelError(string.Empty, "No sellers available.");
-        }
-        else
-        {
-            ViewBag.SellerId = new SelectList(sellers, "Id", "Name", book.SellerId);
-        }
+        ViewBag.SellerId = new SelectList(sellers, "SellerId", "SellerName", book.SellerId);
 
         return View(book);
     }
+
+
+
 
     // GET: Books/Edit/5
     public async Task<IActionResult> Edit(int? id)
@@ -207,7 +212,8 @@ public BooksController(ApplicationDbContext context)
 
         var book = await _context.Books
             .Include(b => b.Seller)
-            .FirstOrDefaultAsync(m => m.Id == id);
+            .FirstOrDefaultAsync(b => b.Id == id);
+
         if (book == null)
         {
             return NotFound();
@@ -215,6 +221,7 @@ public BooksController(ApplicationDbContext context)
 
         return View(book);
     }
+
 
 
 }
