@@ -2,6 +2,9 @@
 
 @{
     ViewData["Title"] = "Books List";
+    var searchTerm = ViewData["SearchTerm"] as string;
+    var selectedType = ViewData["SelectedType"] as string;
+    var types = ViewBag.Types as List<string>; // Türleri liste olarak al
 }
 
 <h2>Books List</h2>
@@ -9,6 +12,43 @@
 <p>
     <a asp-action="Create">Create New</a>
 </p>
+
+<!-- Arama Formu -->
+<form asp-action="Index" method="get" class="form-inline mb-3">
+    <div class="form-group">
+        <input type="text" name="searchTerm" class="form-control" placeholder="Search by title or author" value="@searchTerm" />
+    </div>
+    <div class="form-group ml-2">
+        <select id="typeSelect" name="selectedType" class="form-control">
+            <option value="">All Types</option>
+            <!-- Seçenekler buraya JavaScript ile eklenecek -->
+        </select>
+    </div>
+    <button type="submit" class="btn btn-primary ml-2">Search</button>
+</form>
+
+<!-- JavaScript ile dinamik seçenek ekleme -->
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Türleri ViewData'dan al
+        var types = @Html.Raw(Json.Serialize(ViewBag.Types));
+        var selectedType = '@selectedType';
+
+        var select = document.getElementById('typeSelect');
+
+        // Türleri select elementine ekle
+        types.forEach(function (type) {
+            var option = document.createElement('option');
+            option.value = type;
+            option.textContent = type;
+            if (type === selectedType) {
+                option.selected = true;
+            }
+            select.appendChild(option);
+        });
+    });
+</script>
+
 
 <table class="table">
     <thead>

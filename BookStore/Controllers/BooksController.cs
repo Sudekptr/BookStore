@@ -18,24 +18,43 @@ public BooksController(ApplicationDbContext context)
     }
 
     // GET: Books
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index(string searchTerm, string selectedType)
     {
-        var books = await _context.Books.Include(b => b.Seller).ToListAsync();
-        return View(books);
+        ViewData["SearchTerm"] = searchTerm;
+        ViewData["SelectedType"] = selectedType;
+
+        // Türler için liste
+        var types = _context.Books.Select(b => b.Type).Distinct().ToList();
+        ViewBag.Types = types; // Direkt liste olarak ayarla
+
+        var books = from b in _context.Books.Include(b => b.Seller)
+                    select b;
+
+        if (!string.IsNullOrEmpty(searchTerm))
+        {
+            books = books.Where(b => b.Title.Contains(searchTerm) || b.Author.Contains(searchTerm));
+        }
+
+        if (!string.IsNullOrEmpty(selectedType))
+        {
+            books = books.Where(b => b.Type == selectedType);
+        }
+
+        return View(await books.ToListAsync());
     }
 
     // GET: Books/Create
     public IActionResult Create()
     {
         var sellers = _context.Sellers.ToList();
-        if (sellers != null || !sellers.Any())
+        if (sellers != null && sellers.Any())
         {
             // Sellers tablosunda veri yoksa kullanıcıya bilgi verin
             ModelState.AddModelError(string.Empty, "No sellers available.");
             return View();
         }
 
-        ViewBag.SellerId = new SelectList(_context.Sellers, "Id", "Name");
+        ViewBag.SellerId = new SelectList(sellers, "Id", "Name");
         return View();
     }
 
@@ -53,7 +72,7 @@ public BooksController(ApplicationDbContext context)
 
         // Sellers listesi yeniden alınmalı ve ViewBag ayarlanmalı
         var sellers = _context.Sellers.ToList();
-        if (sellers != null || !sellers.Any())
+        if (sellers == null || !sellers.Any())
         {
             ModelState.AddModelError(string.Empty, "No sellers available.");
         }
@@ -80,7 +99,7 @@ public BooksController(ApplicationDbContext context)
         }
 
         var sellers = await _context.Sellers.ToListAsync();
-        if (sellers == null || !sellers.Any())
+        if (sellers != null || !sellers.Any())
         {
             ModelState.AddModelError(string.Empty, "No sellers available.");
             // Seller seçim listesi oluşturulmazsa, boş bir SelectList oluşturulabilir
